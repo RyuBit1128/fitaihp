@@ -8,7 +8,8 @@ let buildPromise: Promise<any> | null = null;
 function loadBuild() {
   if (!buildPromise) {
     // Resolve relative to this file so it matches how includeFiles bundles
-    const url = new URL('../build/server/index.js', import.meta.url).href;
+    // From /createxyz-project/_/apps/web/api/ → go up 5 levels to /var/task
+    const url = new URL('../../../../../build/server/index.js', import.meta.url).href;
     buildPromise = import(url);
   }
   return buildPromise;
