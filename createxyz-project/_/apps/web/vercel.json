@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/ssr.ts": {
+      "runtime": "nodejs20.x",
+      "includeFiles": "build/**"
+    }
+  },
+  "routes": [
+    { "src": "/assets/(.*)", "dest": "/build/client/assets/$1" },
+    { "src": "/(.*)", "dest": "/api/ssr.ts" }
+  ]
+}
+
+
