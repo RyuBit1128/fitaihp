@@ -20,6 +20,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const listener = createRequestListener({ build, mode: process.env.NODE_ENV });
     return listener(req, res);
   } catch (err) {
+    console.error('SSR handler error:', err);
     res.statusCode = 500;
     res.end('Internal Server Error');
   }
