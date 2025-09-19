@@ -13,7 +13,9 @@ import { nextPublicProcessEnv } from './plugins/nextPublicProcessEnv';
 import { restart } from './plugins/restart';
 import { restartEnvFileChange } from './plugins/restartEnvFileChange';
 
-export default defineConfig({
+export default defineConfig(({ command }) => {
+  const isDev = command === 'serve';
+  return {
   // Keep them available via import.meta.env.NEXT_PUBLIC_*
   envPrefix: 'NEXT_PUBLIC_',
   optimizeDeps: {
@@ -35,10 +37,14 @@ export default defineConfig({
   plugins: [
     nextPublicProcessEnv(),
     restartEnvFileChange(),
-    reactRouterHonoServer({
-      serverEntryPoint: './__create/index.ts',
-      runtime: 'node',
-    }),
+    ...(isDev
+      ? [
+          reactRouterHonoServer({
+            serverEntryPoint: './__create/index.ts',
+            runtime: 'node',
+          }),
+        ]
+      : []),
     babel({
       include: ['src/**/*.{js,jsx,ts,tsx}'], // or RegExp: /src\/.*\.[tj]sx?$/
       exclude: /node_modules/, // skip everything else
@@ -77,6 +83,12 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
+  build: {
+    target: 'es2022',
+  },
+  ssr: {
+    target: 'node',
+  },
   clearScreen: false,
   server: {
     allowedHosts: true,
@@ -89,4 +101,5 @@ export default defineConfig({
       clientFiles: ['./src/app/**/*', './src/app/root.tsx', './src/app/routes.ts'],
     },
   },
+  };
 });

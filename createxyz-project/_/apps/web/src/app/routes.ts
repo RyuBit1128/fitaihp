@@ -48,11 +48,15 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 		const filePath = join(dir, file);
 		const stat = statSync(filePath);
 
-		if (stat.isDirectory()) {
-			const childPath = basePath ? `${basePath}/${file}` : file;
-			const childNode = buildRouteTree(filePath, childPath);
-			node.children.push(childNode);
-		} else if (file === 'page.jsx') {
+    if (stat.isDirectory()) {
+      // Skip API directories from page route generation
+      if (file === 'api') {
+        continue;
+      }
+      const childPath = basePath ? `${basePath}/${file}` : file;
+      const childNode = buildRouteTree(filePath, childPath);
+      node.children.push(childNode);
+    } else if (file === 'page.jsx') {
 			node.hasPage = true;
     }
 	}
