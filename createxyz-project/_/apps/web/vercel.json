@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
   "builds": [
     { "src": "api/ssr.ts", "use": "@vercel/node@3", "config": { "runtime": "nodejs20.x", "includeFiles": ["build/**"] } },
     { "src": "build/client/assets/**", "use": "@vercel/static@1" },

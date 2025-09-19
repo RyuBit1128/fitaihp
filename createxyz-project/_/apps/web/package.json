@@ -8,7 +8,7 @@
 		"build": "react-router build"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": "20.x"
 	},
 	"dependencies": {
 		"@auth/core": "^0.37.2",
