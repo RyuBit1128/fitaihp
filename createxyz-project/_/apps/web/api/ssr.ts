@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { Writable } from 'node:stream';
+import { Readable } from 'node:stream';
 import path from 'node:path';
 import { createRequestHandler } from '@react-router/node';
 
@@ -16,7 +16,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     const build = await loadBuild();
 
-    const url = new URL(req.url || '/', `https://${req.headers.host}`);
+    const proto = (req.headers['x-forwarded-proto'] as string) || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const url = new URL(req.url || '/', `${proto}://${host}`);
     const request = new Request(url, {
       method: req.method,
       headers: req.headers as any,
@@ -35,10 +37,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     response.headers.forEach((value, key) => res.setHeader(key, value));
 
     if (response.body) {
-      await (response.body as any).pipeTo(Writable.toWeb(res));
-    } else {
-      res.end();
-    }
+      const nodeStream = Readable.fromWeb(response.body as any);
+      nodeStream.pipe(res);
+      nodeStream.on('end', () => res.end());
+      nodeStream.on('error', () => {
+        try { res.end(); } catch {}
+      });
+    } else res.end();
   } catch (err) {
     res.statusCode = 500;
     res.end('Internal Server Error');
