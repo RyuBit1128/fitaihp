@@ -7,8 +7,8 @@ let buildPromise: Promise<any> | null = null;
 
 function loadBuild() {
   if (!buildPromise) {
-    const entry = path.join(process.cwd(), 'build/server/index.js');
-    const url = pathToFileURL(entry).href;
+    // Resolve relative to this file so it matches how includeFiles bundles
+    const url = new URL('../../build/server/index.js', import.meta.url).href;
     buildPromise = import(url);
   }
   return buildPromise;
