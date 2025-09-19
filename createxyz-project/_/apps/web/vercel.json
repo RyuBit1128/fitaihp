@@ -6,6 +6,7 @@
     { "src": "build/client/**", "use": "@vercel/static@1" }
   ],
   "routes": [
+    { "handle": "filesystem" },
     { "src": "/assets/(.*)", "dest": "/build/client/assets/$1" },
     { "src": "/(.*)", "dest": "/api/ssr.ts" }
   ]
