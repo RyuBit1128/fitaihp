@@ -1,0 +1,87 @@
+---
+title: Fitai HP 更新ルール（Vercel × React Router SSR）
+scope: web (createxyz-project/_/apps/web)
+---
+
+## 前提（重要設定の要点）
+
+- ルートディレクトリ: `createxyz-project/_/apps/web`
+- Node: 20.x（package.json engines および Vercel Project Settings）
+- ビルド: `npm run build`（react-router build）
+- デプロイ: GitHub push → Vercel 自動デプロイ
+- SSR エントリ: `api/ssr.ts`（@react-router/node の `createRequestListener`）
+- サーバービルドの import 先: `new URL('../build/server/index.js', import.meta.url)`
+- Public直配信: `public/*`（例: `public/webauth.html` はそのまま配信）
+
+## vercel.json の要点（変更時は順序を厳守）
+
+```json
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/ssr.ts", "use": "@vercel/node@3", "config": { "includeFiles": ["build/server/**"] } },
+    { "src": "build/client/**", "use": "@vercel/static@1" }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/assets/(.*)", "dest": "/build/client/assets/$1" },
+    { "src": "/(.*)", "dest": "/api/ssr.ts" }
+  ]
+}
+```
+
+- 静的アセット（`/assets/*`）は必ず静的配信に先にヒットさせる。
+- キャッチオール（`/(.*)`）は最後に SSR へ。
+- `includeFiles` は SSR 関数へ同梱するパス。関数からの相対解決に合わせて `build/server/**` のままにする。
+
+## SSR ハンドラの要点（`api/ssr.ts`）
+
+- `createRequestListener` を使用し、ビルドを `import new URL('../build/server/index.js', import.meta.url)` で動的 import。
+- `x-forwarded-*` ヘッダを踏まえた URL 解決（既存実装を維持）。
+- 500 対策のため、catch ではログ出力＋適切に `res.end()`。
+
+## 環境変数ルール
+
+- クライアントへ露出可: `NEXT_PUBLIC_*`
+- サーバ専用: プレフィックスなし（Vercel の環境変数に設定）
+- `.env` はコミットしない。
+
+## 変更〜デプロイ手順（チェックリスト）
+
+1. 依存追加/更新がある場合のみ:
+   - `cd createxyz-project/_/apps/web`
+   - `npm install`
+2. ビルド検証: `npm run build`
+3. 必要な設定変更:
+   - `vercel.json` を変更した場合は「Redeploy with Clear build cache」を実施
+4. コミット/プッシュ:
+   - 意味のあるコミットメッセージで `git add -A && git commit && git push`
+5. デプロイ確認:
+   - Functions → `api/ssr` ログにエラーがないか
+   - `https://<domain>/` で200、SSRレンダ済みHTMLが表示されるか
+
+## リリース前QA（最低限）
+
+- [ ] ルート `/` が 200
+- [ ] `/assets/*.js`, `/assets/*.css` が 200 かつ MIME 正常（application/javascript, text/css）
+- [ ] ブラウザコンソールにエラーなし
+- [ ] `api/ssr` 関数ログに 500 が連発していない
+- [ ] 主要導線（トップ→お問い合わせ等）が機能
+
+## webauth.html（ドメイン/サービス認証）
+
+- 指示に従い `public/webauth.html` を作成（例: トークンをそのまま 1 行）
+- デプロイ後 `https://<domain>/webauth.html` でトークンがそのまま表示されること
+- 認証後、サービスの要件に応じてファイルを残す/削除を判断
+
+## トラブルシュート（頻出）
+
+- 画面が真っ白 & コンソールで `MIME text/html` → ルーティング順序ミス。`{ handle: 'filesystem' }` と `/assets/*` → 静的配信を先に。
+- 関数が 500 & ログで `ERR_MODULE_NOT_FOUND build/server/index.js` → `includeFiles` と SSR の import パスを確認（上記要件に戻す）。
+- Node バージョン警告/不一致 → package.json の `engines.node` を `20.x`、Vercel Project も 20.x に。
+
+## Git/コミット運用
+
+- 小さく頻繁にコミット。設定変更（vercel.json, api/ssr.ts, vite.config.ts）は必ずメッセージに明記。
+- 構成ファイル変更後は「Clear build cache」で再デプロイ。
+
