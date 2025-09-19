@@ -1,15 +1,24 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
   "builds": [
-    { "src": "api/ssr.ts", "use": "@vercel/node@3", "config": { "includeFiles": ["build/server/**"] } },
-    { "src": "build/client/**", "use": "@vercel/static@1" }
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build/client",
+        "buildCommand": "npm run build"
+      }
+    },
+    {
+      "src": "api/ssr.ts",
+      "use": "@vercel/node@3",
+      "config": {
+        "includeFiles": ["build/server/**"]
+      }
+    }
   ],
   "routes": [
     { "handle": "filesystem" },
-    { "src": "/assets/(.*)", "dest": "/build/client/assets/$1" },
     { "src": "/(.*)", "dest": "/api/ssr.ts" }
   ]
 }
-
-
